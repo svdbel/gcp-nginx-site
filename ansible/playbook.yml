@@ -1,0 +1,66 @@
+---
+- name: Deploy Nginx with domain support
+  hosts: web
+  become: yes
+
+  vars:
+    domain_name: "svdbel.org"  # ЗАМЕНИТЕ на ваш домен
+    local_html_dir: "html_files"
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create website directory
+      file:
+        path: /var/www/{{ domain_name }}
+        state: directory
+        mode: '0755'
+        owner: www-data
+        group: www-data
+
+    - name: Deploy HTML content
+      copy:
+        src: "{{ local_html_dir }}/index.html"
+        dest: /var/www/{{ domain_name }}/index.html
+        mode: '0644'
+        owner: www-data
+        group: www-data
+      tags: deploy_html
+      
+    - name: Create Nginx configuration for domain
+      template:
+        src: nginx-site.conf.j2
+        dest: /etc/nginx/sites-available/{{ domain_name }}
+        mode: '0644'
+      notify: reload nginx
+
+    - name: Enable site configuration
+      file:
+        src: /etc/nginx/sites-available/{{ domain_name }}
+        dest: /etc/nginx/sites-enabled/{{ domain_name }}
+        state: link
+      notify: reload nginx
+
+    - name: Disable default site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: reload nginx
+
+    - name: Ensure nginx is running and enabled
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
