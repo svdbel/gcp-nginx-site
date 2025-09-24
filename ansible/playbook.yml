@@ -4,12 +4,12 @@
   become: yes
 
   vars:
-    domain_name: "svdbel.org"  # ЗАМЕНИТЕ на ваш домен
+    domain_name: "svdbel.org" # ЗАМЕНИТЕ на ваш домен
     local_html_dir: "html_files"
   tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: yes
+    # - name: Update apt cache
+    #   apt:
+    #     update_cache: yes
 
     - name: Install nginx
       apt:
@@ -20,7 +20,7 @@
       file:
         path: /var/www/{{ domain_name }}
         state: directory
-        mode: '0755'
+        mode: "0755"
         owner: www-data
         group: www-data
 
@@ -28,16 +28,16 @@
       copy:
         src: "{{ local_html_dir }}/index.html"
         dest: /var/www/{{ domain_name }}/index.html
-        mode: '0644'
+        mode: "0644"
         owner: www-data
         group: www-data
       tags: deploy_html
-      
+
     - name: Create Nginx configuration for domain
       template:
         src: nginx-site.conf.j2
         dest: /etc/nginx/sites-available/{{ domain_name }}
-        mode: '0644'
+        mode: "0644"
       notify: reload nginx
 
     - name: Enable site configuration
